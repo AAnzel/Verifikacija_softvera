@@ -21,13 +21,15 @@ enum class VredResetke : char
     Dno,
 };
 
+// Deklarisemo nas prolaz kao podklasu klase FunctionPass
 class AIProlaz : public FunctionPass
 {
 public:
+    // Deklarismo identifikator prolaza koji LLVM koristi da bi identifikovao prolaz
     static char ID;
     AIProlaz() : FunctionPass(ID){}
 	
-	// Override-ujemo metod koji je vec definisan u llvm-u, ovde je sustina programa
+	// Override-ujemo metod koji je vec definisan u llvm-u (nasledjen iz FunctionPass), ovde je sustina programa
     bool runOnFunction(Function& F) override
 	{
 		// Inicijalizujemo listu intervala na osnovu prosledjene funkcije
@@ -106,7 +108,7 @@ private:
 		
 		else if (auto* konst_int = dyn_cast<ConstantInt>(vred))
 		{
-			outs() << "Obradjena vrednost je [konstantan ceo broj]" << "\n";
+			outs() << "Obradjena vrednost je [celobrojna konstanta]" << "\n";
 			
 			return {VredResetke::ConstantRange, new ConstantRange(konst_int->getValue())};
 		}
@@ -186,7 +188,7 @@ private:
 	{
 		if (auto* konst_int = dyn_cast<ConstantInt>(vred))
 		{
-			outs() << "Vracanje trenutne vrednosti: konstantan ceo broj" << "\n";
+			outs() << "Vracanje trenutne vrednosti: celobrojna konstanta" << "\n";
 			_mapaVrednosti[vred] = VredResetke::ConstantRange;
 			_mapaIntervala[vred] = new ConstantRange(konst_int->getValue());
 		}
@@ -277,7 +279,7 @@ private:
     }
 };
 
-char AIProlaz::ID = 42;
+char AIProlaz::ID = 42; // inicijalizujemo ID prolaza ovde; LLVM koristi adresu ID-a da identifikuje prolaz te je vrednost kojom inicijalizujemo nebitna
 
 // Registrovanje prolaza da bi ga kompilator uhvatio
 static RegisterPass<AIProlaz> X("AI-PROLAZ", "Apstraktna interpretacija", false, false);
