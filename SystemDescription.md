@@ -2,7 +2,7 @@
 
 ## Opis problema:
 
-	Implementiranje "primitivne" apstrakte interpretacije korišćenjem ugrađene biblioteke
+	Implementiranje "primitivne" apstraktne interpretacije korišćenjem ugrađene biblioteke
 	ConstantRange.h, koju daje LLVM platforma, za analizu intervala celobrojnih promenljivih
 	do dostizanja fiksne tačke programa. Program napisan na C++ jeziku se analizira nakon 
 	prevođenja na međukod LLVM platforme (LLVM IR). Cilj je praćenje izvršavanja programa,
