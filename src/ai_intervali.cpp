@@ -6,7 +6,7 @@
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Function.h"
 #include "llvm/Pass.h"
-#include "llvm/Support/Casting.h""
+#include "llvm/Support/Casting.h"
 #include "llvm/Support/raw_ostream.h"
 
 using namespace llvm;
@@ -68,6 +68,7 @@ public:
 		// Metod za ispis rezultata
 		dumpAnalysis();
 		
+		// Vracamo false jer program nije izmenjen, inace true. Standard LLVM-a
 		return false;
    }
 private:
@@ -76,7 +77,7 @@ private:
 	
 	// Ako je u mapi gore sacuvana vrednost tipa konstantnog intervala
 	// onda se taj konstantni interval cuva bas u ovoj dole mapi
-	// Mape su povezane preko svojih prvih elemenata
+	// Mape su povezane preko svojih prvih elemenata, tj. kljuceva
     std::unordered_map<Value*, ConstantRange*> _mapaIntervala;
 	
     std::pair<VredResetke, ConstantRange*> _obradjenaVred(Value* vred)
@@ -96,11 +97,14 @@ private:
 		// LLVM-ov nacin ispisa
 		outs() << "Obradjena vrednost je [sirina]: " << sirina << "\n";
 		
+		// dyn_cast<> operator = prvo proveri da li je operand odgovarajuceg tipa
+		// I ako jeste, onda vraca pokazivac na njega, inace vraca null
 		if (auto *funk_arg = dyn_cast<Argument>(vred))
 		{
 			outs() << "Obradjena vrednost je [argument funkcije]" << "\n";
 			outs() << "Ime funkcije: " << funk_arg->getParent() << "\n";
 			
+			// Interval je oblika: {sirina}, pogledati dokumentaciju
 			return {VredResetke::ConstantRange, new ConstantRange(sirina, true)};
 		}
 		
@@ -132,7 +136,7 @@ private:
 		
 		std::pair<VredResetke, ConstantRange*> bazni_par = {VredResetke::Dno, nullptr};
 		
-		// Trivijalan slucaj
+		// Trivijalan slucaj kada nije celobrojna vrednost
 		if (!vred->getType() -> isIntegerTy())
 			return bazni_par;
 		
@@ -177,6 +181,7 @@ private:
 
     std::pair<VredResetke, ConstantRange*> vrati_trenutnu_vred(Value* vred)
 	{
+		// Radimo samo slucaj kada je u pitanju ceo broj
 		if (auto* konst_int = dyn_cast<ConstantInt>(vred))
 		{
 			outs() << "Vracanje trenutne vrednosti: konstantan ceo broj" << "\n";
@@ -193,16 +198,20 @@ private:
 	// Inicijalizacija svih promenljivih i dodela adekvatnih elemenata resetke (lattice elements)
 	std::queue<Value*> init(Function& F)
 	{
-		// Ako nesto ne poznajemo tj. to je promenljiva, stavljamo mu punu vrednost
+		// Ako nesto ne poznajemo tj. to je promenljiva, stavljamo mu punu vrednost (full set)
 		// Tj. vrednost intervala koju kao tip definise
 		// Inace ga posmatramo kao konstantu
+		
+		// Prvo iteriramo kroz argumente funkcije
 		auto fnIterator = F.arg_begin();
 		
 		while (fnIterator != F.arg_end())
 		{
+			// Posmatramo trenutni argument do kojeg je iterator stigao
 			Value* arg = fnIterator;
 			
-			// Krecemo se kroz elemente programa, inicijalizujemo ih i cuvamo
+			// Obradjujemo tu vrednost i dobijamo vrednosti resetke i intervale
+			// Zatim cuvamo to u odgovarajucim mapama
 			std::pair<VredResetke, ConstantRange*> res = _obradjenaVred(arg);
 			_mapaVrednosti[arg] = res.first;
 			_mapaIntervala[arg] = res.second;
@@ -213,6 +222,8 @@ private:
 		std::queue<Value*> lista_intervala;
 		outs() << "\nInicijalizacija\n\n";
 		
+		// Zatim se krecemo kroz samu funkciju. Ona se sastoji iz baznih blokova
+		// Bazni blokovi se sastoje iz instrukcija
 		// BB je skraceno za bazni blok, od baznih blokova se sastoji cfg
 		// F je skraceno za funkciju
 		for (auto& BB : F)
@@ -224,6 +235,7 @@ private:
 				outs() << I << "\n";
 				Value* vred = cast<Value>(&I);
 				
+				// Obradjujemo tu instrukciju
 				std::pair<VredResetke, ConstantRange*> res = _obradjenaVred(vred);
 				_mapaVrednosti[vred] = res.first;
 				
@@ -249,9 +261,10 @@ private:
 		
 		for (auto& vred : _mapaIntervala)
 		{
+			// isa<> operator = instanceof vraca bool vrednosti
 			if (!isa<Instruction>(vred.first))
 				continue;
-		
+			
 			outs() << *cast<Instruction>(vred.first) << "\n";
 			
 			if (!vred.second)
@@ -260,16 +273,24 @@ private:
 				continue;
 			}
 			
+			// Ako interval sadrzi jedan element getSingleElement vraca taj element
+			// Inace vraca null
+			// Ovde prvo proveravamo slucaj jednog elementa u intervalu
 			else if (auto sele = vred.second->getSingleElement())
 				outs() << "\tRezultat: " << *sele << "\n";
 			
+			// Ovo je slucaj kada imamo ceo interval
 			else
 				outs() << "\tRezultat: " << *vred.second << "\n";
 		}
     }
 };
 
+// Ova vrednost je nebitna, sluzi samo zarad povezivanja prolaza
 char AIProlaz::ID = 42;
 
 // Registrovanje prolaza da bi ga kompilator uhvatio
+// Prvi false oznacava da zelimo samo da gledamo CFG programa
+// Drugi false oznacava da se radi o prolazu za analizu programa
 static RegisterPass<AIProlaz> X("AI-PROLAZ", "Apstraktna interpretacija", false, false);
+
