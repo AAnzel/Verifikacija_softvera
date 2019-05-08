@@ -20,9 +20,11 @@ enum class VredResetke : char
     Dno,
 };
 
+// Deklarisemo nas prolaz kao podklasu klase FunctionPass
 class AIProlaz : public FunctionPass
 {
 public:
+    // Deklarismo identifikator prolaza koji LLVM koristi da bi identifikovao prolaz
     static char ID;
     AIProlaz() : FunctionPass(ID)
 	{}
