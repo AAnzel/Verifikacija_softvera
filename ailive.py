@@ -5,6 +5,7 @@ import subprocess
 print("Dobrodosli u apstraktnu interpretaciju live :)")
 
 PATH = "/home/student/Desktop/Verifikacija_Softvera"  # Konfigurisi ovo za svaku konkretnu primenu
+os.chdir(PATH)
 
 code = open(os.path.join(PATH, "test/code.cpp"), "w")
 
