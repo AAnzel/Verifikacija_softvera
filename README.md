@@ -19,7 +19,7 @@ Master Studije
 ### Test primeri su smešteni u folderu 'test'
 * Za kreiranje novih test primera, postupak je sledeći:
 	* Pozicionirati se u direktorijum 'test' i u njemu iskopirati željeni .cpp fajl
-	* Pokrenuti komandu: clang++-7 -O3 -emit-llvm ime_primera.cpp -c
+	* Pokrenuti komandu: clang++-7 -O0 -emit-llvm ime_primera.cpp -c
 	* Kao rezultat dobijamo ime_primera.bc fajl
 	
 ### Prevođenje i pokretanje programa:

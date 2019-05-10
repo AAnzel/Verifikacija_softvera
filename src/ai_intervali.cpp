@@ -16,21 +16,21 @@ enum class VredResetke : char
 {
 	// Ne koristimo Top jer ce interval biti ogranicen svojom sirinom
 	// Inace bi mogli da koristimo inicijalno MAX_INT (samo sa celim brojevima radimo)
-    ConstantRange,
-    Dno,
+	ConstantRange,
+	Dno,
 };
 
 // Deklarisemo nas prolaz kao podklasu klase FunctionPass
 class AIProlaz : public FunctionPass
 {
 public:
-    // Deklarismo identifikator prolaza koji LLVM koristi da bi identifikovao prolaz
-    static char ID;
-    AIProlaz() : FunctionPass(ID)
+	// Deklarismo identifikator prolaza koji LLVM koristi da bi identifikovao prolaz
+	static char ID;
+	AIProlaz() : FunctionPass(ID)
 	{}
-	
+
 	// Override-ujemo metod koji je vec definisan u llvm-u, ovde je sustina programa
-    bool runOnFunction(Function& F) override
+	bool runOnFunction(Function& F) override
 	{
 		// Inicijalizujemo listu intervala na osnovu prosledjene funkcije
 		std::queue<Value*> lista_intervala = init(F);
@@ -74,15 +74,15 @@ public:
 		return false;
    }
 private:
-    // Vrednosti resetke (Lattice Values)
-    std::unordered_map<Value*, VredResetke> _mapaVrednosti;
-	
+	// Vrednosti resetke (Lattice Values)
+	std::unordered_map<Value*, VredResetke> _mapaVrednosti;
+
 	// Ako je u mapi gore sacuvana vrednost tipa konstantnog intervala
 	// onda se taj konstantni interval cuva bas u ovoj dole mapi
 	// Mape su povezane preko svojih prvih elemenata, tj. kljuceva
-    std::unordered_map<Value*, ConstantRange*> _mapaIntervala;
-	
-    std::pair<VredResetke, ConstantRange*> _obradjenaVred(Value* vred)
+	std::unordered_map<Value*, ConstantRange*> _mapaIntervala;
+
+	std::pair<VredResetke, ConstantRange*> _obradjenaVred(Value* vred)
 	{
 		std::pair<VredResetke, ConstantRange*> _rezultat;
 		
@@ -128,10 +128,10 @@ private:
 			
 			return funk_tran (vred);
 		}
-    }
+	}
 
-    // Funkcije transfera za ucitane vrednosti, vraca par
-    std::pair<VredResetke, ConstantRange*> funk_tran(Value* vred)
+	// Funkcije transfera za ucitane vrednosti, vraca par
+	std::pair<VredResetke, ConstantRange*> funk_tran(Value* vred)
 	{
 		Instruction* inst = cast<Instruction>(vred);
 		assert(inst);
@@ -142,13 +142,53 @@ private:
 		if (!vred->getType() -> isIntegerTy())
 			return bazni_par;
 		
-		// Program se moze poboljsati i prosiriti funkcijama za obradu i unarnih operacija
-		// Slucaj kada nije binarna operacija
+		const unsigned sirina = vred->getType()->getIntegerBitWidth();
+		
+		// Obradjivanje unarnih operacija ucitavanja
 		if (!inst->isBinaryOp())
-			return bazni_par;
+		{
+			if (inst->getOpcode() == Instruction::Load)
+			{
+				ConstantRange _rezultat (sirina, true);
+				Value* v1 = inst->getOperand(0);
+				
+				if (Instruction *inst2 = dyn_cast<Instruction> (v1))
+				{
+					v1 = dyn_cast<Value> (inst2->getOperand(0));
+				}
+				
+				// Ovde je verovatno potrebna ispravka
+				
+				auto res1 = vrati_trenutnu_vred(v1);
+				const ConstantRange& r1 = *res1.second;
+				_rezultat = r1;
+				return {VredResetke::ConstantRange, new ConstantRange(_rezultat)};
+			}
+			
+			else if (inst->getOpcode() == Instruction::Store)
+			{
+				ConstantRange _rezultat (sirina, true);
+				Value* v1 = inst->getOperand(0);
+				
+				if (Instruction *inst2 = dyn_cast<Instruction> (v1))
+				{
+					v1 = dyn_cast<Value> (inst2->getOperand(0));
+				}
+				
+				// Ovde je verovatno potrebna ispravka
+				
+				auto res1 = vrati_trenutnu_vred(v1);
+				const ConstantRange& r1 = *res1.second;
+				_rezultat = r1;
+				return {VredResetke::ConstantRange, new ConstantRange(_rezultat)};
+			}
+			
+			else
+				return bazni_par;
+		}
+		
 		
 		// Slucaj kad je binarna operacija, izdvajamo operande i uzimamo im trenutne vrednosti
-		const unsigned sirina = vred->getType()->getIntegerBitWidth();
 		Value* v1 = inst->getOperand(0);
 		Value* v2 = inst->getOperand(1);
 		auto res1 = vrati_trenutnu_vred(v1);
@@ -179,9 +219,11 @@ private:
 			default:
 				return bazni_par;
 		}
-    }
+		
+		return bazni_par;
+	}
 
-    std::pair<VredResetke, ConstantRange*> vrati_trenutnu_vred(Value* vred)
+	std::pair<VredResetke, ConstantRange*> vrati_trenutnu_vred(Value* vred)
 	{
 		// Radimo samo slucaj kada je u pitanju ceo broj
 		if (auto* konst_int = dyn_cast<ConstantInt>(vred))
@@ -254,9 +296,9 @@ private:
 		}
 		
 		return lista_intervala;
-    }
-	
-    void dumpAnalysis()
+	}
+
+	void dumpAnalysis()
 	{
 		outs() << "\nIspis analize\n";
 		outs() << "========================\n";
@@ -265,7 +307,11 @@ private:
 		{
 			// isa<> operator = instanceof vraca bool vrednosti
 			if (!isa<Instruction>(vred.first))
+			{
+				
 				continue;
+			}	
+			
 			
 			outs() << *cast<Instruction>(vred.first) << "\n";
 			
@@ -278,14 +324,15 @@ private:
 			// Ako interval sadrzi jedan element getSingleElement vraca taj element
 			// Inace vraca null
 			// Ovde prvo proveravamo slucaj jednog elementa u intervalu
+			/*
 			else if (auto sele = vred.second->getSingleElement())
 				outs() << "\tRezultat: " << *sele << "\n";
-			
+			*/
 			// Ovo je slucaj kada imamo ceo interval
 			else
 				outs() << "\tRezultat: " << *vred.second << "\n";
 		}
-    }
+	}
 };
 
 // Ova vrednost je nebitna, sluzi samo zarad povezivanja prolaza

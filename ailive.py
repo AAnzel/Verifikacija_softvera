@@ -4,7 +4,7 @@ import subprocess
 
 print("Dobrodosli u apstraktnu interpretaciju live :)")
 
-PATH = "/home/student/Desktop/Verifikacija_Softvera"  # Konfigurisi ovo za svaku konkretnu primenu
+PATH = "/mnt/Data/Documents/Fakultet/Master studije/Verifikacija softvera/Zadaci/Prakticni seminarski rad/Rad/Aps_Interp_LLVM"  # Konfigurisi ovo za svaku konkretnu primenu
 os.chdir(PATH)
 
 code = open(os.path.join(PATH, "test/code.cpp"), "w")
@@ -41,13 +41,13 @@ else:
 os.chdir("test")
 print("\n\n==================================================================================")
 print("korak 1: \"clang\" prevodi cpp fajl")
-subprocess.call("clang-6.0 -load -O3 -emit-llvm code.cpp -c", shell=True)
+subprocess.call("clang++-7 -O0 -emit-llvm code.cpp -c", shell=True)
 os.chdir("../")
 print("")
 
 print("\n\n==================================================================================")
 print("korak 2: alat \"opt\" vrsi apstraktnu interpretaciju: ")
-subprocess.call("opt-6.0 -load src/AI_INTERVALI.so -AI-PROLAZ test/code.bc", shell=True)
+subprocess.call("opt-7 -load build/src/AI_INTERVALI.so -AI-PROLAZ test/code.bc", shell=True)
 print("")
 
 
