@@ -1,3 +1,6 @@
+Izmena bazne verzije projekta koja sadrzi samo implementacije operacija + i -.
+(Jun 2019)
+
 Ovde se nalazi kompletno resenje, verzija koda koja radi (LLVM 6.0)
 
 U direktorijumu test:
